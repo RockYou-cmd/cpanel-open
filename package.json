@@ -1,0 +1,133 @@
+{
+  "name": "cpanel-open",
+  "displayName": "cPanel Open",
+  "description": "Browse, edit, and save cPanel text files directly in VS Code over HTTPS.",
+  "version": "0.3.2",
+  "publisher": "rockyou",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": true
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "cpanel",
+    "uapi",
+    "remote",
+    "files"
+  ],
+  "main": "./src/extension.js",
+  "extensionKind": [
+    "ui"
+  ],
+  "activationEvents": [
+    "onFileSystem:cpanel-open"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "cpanelOpen.openFile",
+        "title": "Open File…",
+        "category": "cPanel"
+      },
+      {
+        "command": "cpanelOpen.connect",
+        "title": "Connect / Change Connection…",
+        "category": "cPanel"
+      },
+      {
+        "command": "cpanelOpen.disconnect",
+        "title": "Forget Connection",
+        "category": "cPanel"
+      },
+      {
+        "command": "cpanelOpen.showBrowser",
+        "title": "Show File Browser",
+        "category": "cPanel",
+        "icon": "$(files)"
+      },
+      {
+        "command": "cpanelOpen.refresh",
+        "title": "Refresh Folders",
+        "category": "cPanel",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "cpanelOpen.openRemoteFile",
+        "title": "Open Remote File",
+        "category": "cPanel"
+      },
+      {
+        "command": "cpanelOpen.openBackups",
+        "title": "Show Local Backups",
+        "category": "cPanel"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cpanelOpen",
+          "title": "cPanel",
+          "icon": "media/cpanel.svg"
+        }
+      ]
+    },
+    "views": {
+      "cpanelOpen": [
+        {
+          "id": "cpanelOpen.files",
+          "name": "Files",
+          "contextualTitle": "cPanel"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "cpanelOpen.files",
+        "contents": "Browse your cPanel files without downloading a whole folder.\n[Connect to cPanel](command:cpanelOpen.connect)",
+        "when": "!cpanelOpen.connected"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "cpanelOpen.refresh",
+          "when": "view == cpanelOpen.files && cpanelOpen.connected",
+          "group": "navigation@1"
+        },
+        {
+          "command": "cpanelOpen.connect",
+          "when": "view == cpanelOpen.files",
+          "group": "connection@1"
+        },
+        {
+          "command": "cpanelOpen.disconnect",
+          "when": "view == cpanelOpen.files && cpanelOpen.connected",
+          "group": "connection@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "cpanelOpen.openRemoteFile",
+          "when": "false"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "package": "pnpm dlx @vscode/vsce package --no-dependencies"
+  },
+  "icon": "media/marketplace-icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RockYou-cmd/cpanel-open.git"
+  }
+}
