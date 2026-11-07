@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0
+
+- Create an empty remote text file from the cPanel sidebar or Command Palette. Existing names are protected from overwrite.
+
 ## 0.3.2
 
 - Released the source under the MIT License.

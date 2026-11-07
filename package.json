@@ -1,8 +1,8 @@
 {
   "name": "cpanel-open",
   "displayName": "cPanel Open",
-  "description": "Browse, edit, and save cPanel text files directly in VS Code over HTTPS.",
-  "version": "0.3.2",
+  "description": "Browse, create, and edit cPanel text files directly in VS Code over HTTPS.",
+  "version": "0.4.0",
   "publisher": "rockyou",
   "license": "MIT",
   "engines": {
@@ -24,6 +24,12 @@
     "files"
   ],
   "main": "./src/extension.js",
+  "files": [
+    "src/",
+    "media/",
+    "LICENSE.txt",
+    "CHANGELOG.md"
+  ],
   "extensionKind": [
     "ui"
   ],
@@ -36,6 +42,12 @@
         "command": "cpanelOpen.openFile",
         "title": "Open File…",
         "category": "cPanel"
+      },
+      {
+        "command": "cpanelOpen.newFile",
+        "title": "New File…",
+        "category": "cPanel",
+        "icon": "$(new-file)"
       },
       {
         "command": "cpanelOpen.connect",
@@ -98,6 +110,11 @@
     "menus": {
       "view/title": [
         {
+          "command": "cpanelOpen.newFile",
+          "when": "view == cpanelOpen.files && cpanelOpen.connected",
+          "group": "navigation@2"
+        },
+        {
           "command": "cpanelOpen.refresh",
           "when": "view == cpanelOpen.files && cpanelOpen.connected",
           "group": "navigation@1"
@@ -111,6 +128,13 @@
           "command": "cpanelOpen.disconnect",
           "when": "view == cpanelOpen.files && cpanelOpen.connected",
           "group": "connection@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "cpanelOpen.newFile",
+          "when": "view == cpanelOpen.files && viewItem == cpanelFolder",
+          "group": "navigation"
         }
       ],
       "commandPalette": [

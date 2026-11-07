@@ -103,6 +103,14 @@ function activate(context) {
     return await tree.getConnection() || connect();
   }
 
+  function remoteUri(active, filename) {
+    return vscode.Uri.from({ scheme: SCHEME, authority: tokenKey(active.profile).slice(-16), path: filename });
+  }
+
+  function isDirty(uri) {
+    return vscode.workspace.textDocuments.some(document => document.uri.toString() === uri.toString() && document.isDirty);
+  }
+
   async function showRemoteFile(active, filename, size) {
     if (size > MAX_FILE_BYTES) {
       await vscode.window.showWarningMessage('Choose a text file smaller than 2 MB.');
@@ -112,13 +120,36 @@ function activate(context) {
     if (relative === '..' || relative.startsWith('../') || path.isAbsolute(relative)) {
       throw new Error('Choose a file within the connected starting folder.');
     }
-    const uri = vscode.Uri.from({ scheme: SCHEME, authority: tokenKey(active.profile).slice(-16), path: filename });
-    const isDirty = () => vscode.workspace.textDocuments.some(document => document.uri.toString() === uri.toString() && document.isDirty);
-    if (!isDirty()) await loading('Opening cPanel file…', () => files.prepareFile(uri, () => !isDirty()));
+    const uri = remoteUri(active, filename);
+    if (!isDirty(uri)) await loading('Opening cPanel file…', () => files.prepareFile(uri, () => !isDirty(uri)));
     const document = await vscode.workspace.openTextDocument(uri);
     await vscode.window.showTextDocument(document, { preview: false });
     vscode.window.setStatusBarMessage('cPanel: editable remote file — Save uploads to server', 5000);
     return true;
+  }
+
+  async function newFile(node) {
+    const active = await getConnection();
+    if (!active || (node?.directory && !tree.isCurrent(node))) return;
+    const folder = node?.directory ? node.path : active.profile.root;
+    const name = await vscode.window.showInputBox({
+      title: 'cPanel: New File',
+      prompt: `Create an empty file on the server in ${folder}`,
+      placeHolder: 'example.txt',
+      ignoreFocusOut: true,
+      validateInput(value) {
+        const name = value.trim();
+        if (!name || name === '.' || name === '..' || /[\/\\\x00-\x1f\x7f]/.test(name)) {
+          return 'Enter a single file name without slashes or control characters.';
+        }
+      }
+    });
+    if (name === undefined) return;
+    const uri = remoteUri(active, path.join(folder, name.trim()));
+    if (isDirty(uri)) throw new Error('An editor for this file already has unsaved changes.');
+    await loading('Creating cPanel file…', () => files.writeFile(uri, Buffer.alloc(0), { create: true, overwrite: false }));
+    tree.refresh();
+    await showRemoteFile(active, uri.path, 0);
   }
 
   async function openFile(connection) {
@@ -169,6 +200,7 @@ function activate(context) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand('cpanelOpen.openFile', () => guarded(() => openFile())),
+    vscode.commands.registerCommand('cpanelOpen.newFile', node => guarded(() => newFile(node))),
     vscode.commands.registerCommand('cpanelOpen.connect', () => guarded(async () => {
       const connection = await connect();
       if (connection) await vscode.commands.executeCommand('workbench.view.extension.cpanelOpen');

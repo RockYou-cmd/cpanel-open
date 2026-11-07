@@ -98,11 +98,12 @@ class CpanelFileSystem {
 
   async save(uri, bytes, options) {
     const active = await this.connectionFor(uri);
-    if (!options.overwrite) throw this.api.FileSystemError.NoPermissions('This version edits existing files only.');
+    if (!options.overwrite && !options.create) throw this.api.FileSystemError.NoPermissions('Open the file from the cPanel sidebar before saving it.');
     if (bytes.length > MAX_FILE_BYTES) throw this.api.FileSystemError.NoPermissions('Files must stay smaller than 2 MB.');
     try { new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
     catch { throw this.api.FileSystemError.NoPermissions('Save this file using UTF-8 encoding.'); }
     if (bytes.includes(0)) throw this.api.FileSystemError.NoPermissions('Binary file writes are not supported.');
+    if (!options.overwrite) return this.createFile(active, uri, bytes);
 
     const key = uri.toString();
     const expected = this.files.get(key)?.expected || this.baselines.get(this.baselineKey(uri));
@@ -139,18 +140,46 @@ class CpanelFileSystem {
     this.onSaved(uri, backup);
   }
 
+  async createFile(active, uri, bytes) {
+    if (uri.path === active.profile.root || path.normalize(uri.path) !== uri.path || uri.path.endsWith('/')) {
+      throw this.api.FileSystemError.NoPermissions('Choose a file within the connected starting folder.');
+    }
+    // Listing also checks that the parent exists. The upload API can create
+    // missing directories, so do not upload to a stale folder from the tree.
+    const siblings = await active.client.listFiles(path.dirname(uri.path));
+    if (siblings.some(entry => entry.name === path.basename(uri.path))) {
+      throw this.api.FileSystemError.FileExists(uri);
+    }
+
+    try {
+      const upload = await active.client.uploadFile(uri.path, bytes, { overwrite: false });
+      if (upload?.succeeded !== 1) throw new Error('The server did not report a successful upload.');
+      if (!(await this.remoteBytes(active, uri)).equals(bytes)) {
+        throw new Error('The server returned different contents.');
+      }
+    } catch (error) {
+      throw this.api.FileSystemError.Unavailable(`Creation could not be confirmed: ${error.message} Refresh the folder before trying again.`);
+    }
+    await this.commit(uri, bytes, this.api.FileChangeType.Created);
+  }
+
   conflict() {
     return this.api.FileSystemError.NoPermissions('The server file changed since you opened it. Nothing was uploaded. Keep a copy of your edits, revert this tab, then reopen it from the cPanel sidebar and merge your changes.');
   }
 
-  async commit(uri, bytes) {
+  async commit(uri, bytes, type = this.api.FileChangeType.Changed) {
     const key = uri.toString();
     const previous = this.files.get(key);
     const expected = hash(bytes);
     this.files.set(key, { bytes: Buffer.from(bytes), expected, mtime: Math.max(Date.now(), (previous?.mtime || 0) + 1), prepared: false });
     try { await this.baselines.update(this.baselineKey(uri), expected); }
-    catch { throw this.api.FileSystemError.Unavailable('Saved on the server, but local save tracking could not be updated. Press Save again to retry tracking.'); }
-    this.changed(uri);
+    catch {
+      const message = type === this.api.FileChangeType.Created
+        ? 'The file was created on the server, but local save tracking could not be updated. Refresh the folder and reopen the file.'
+        : 'Saved on the server, but local save tracking could not be updated. Press Save again to retry tracking.';
+      throw this.api.FileSystemError.Unavailable(message);
+    }
+    this.emitter.fire([{ type, uri }]);
   }
 
   changed(uri) { this.emitter.fire([{ type: this.api.FileChangeType.Changed, uri }]); }

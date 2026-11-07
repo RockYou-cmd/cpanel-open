@@ -1,6 +1,6 @@
 # cPanel Open
 
-A small VS Code extension: connect to cPanel, expand remote folders in the sidebar, and edit existing text files using the cPanel HTTPS API.
+A small VS Code extension for browsing remote folders and creating and editing text files through the cPanel HTTPS API.
 
 ## Install and use
 
@@ -16,6 +16,10 @@ Click the folder/code icon in the Activity Bar to return to cPanel, or run **cPa
 Folders load **one level at a time when expanded**. The extension does not recursively download `public_html`. Expanding a folder only fetches its listing; file contents are fetched when you click a file. Listings are cached in memory until you click **Refresh Folders** in the sidebar header. Refresh reloads visible expanded folders; it does not automatically replace your open editor contents. Click a clean file again to fetch a fresh copy. Clicking a tab with unsaved edits keeps those edits.
 
 The original **cPanel: Open File…** command is still available as a keyboard-friendly folder picker. Type a filename to filter the current folder, select `..` to return to its parent, or press Escape to close the picker.
+
+### Creating a file
+
+Right-click an existing folder in the cPanel sidebar and choose **New File…**. Use the sidebar’s New File button or run **cPanel: New File…** from the Command Palette to create a file in the starting folder. Enter a filename such as `notes.txt`. Confirming the name creates an empty file on the server and opens it for editing. If the name is already in use, creation stops.
 
 ### Saving to the server
 
@@ -37,7 +41,7 @@ Create a token in **cPanel → Security → Manage API Tokens**. The hosting pro
 
 Use **cPanel: Connect / Change Connection…** to replace the connection or an expired token. Use **cPanel: Forget Connection** to delete the saved connection and token.
 
-## Version 0.3 scope
+## Version 0.4 scope
 
 - One saved connection.
 - Sidebar with expandable folders, file icons, connected server, Refresh, and Collapse All.
@@ -46,7 +50,7 @@ Use **cPanel: Connect / Change Connection…** to replace the connection or an e
 - Existing UTF-8 or ASCII code/text files up to 2 MB.
 - Native Save uploads to the server, with local backups, conflict checks, and readback verification.
 - Reopening through the sidebar or picker fetches a fresh copy.
-- No creating, deleting, or renaming remote files/folders; no terminal or remote debugging.
+- Create empty text files in existing folders. Folder creation, deletion, renaming, terminals, and remote debugging are outside this version’s scope.
 - Binary files and image previews are outside this prototype's scope.
 
 The token is stored using VS Code SecretStorage. The extension also stores connection settings and expected file hashes; previous file contents are kept in the local backups described above. Backup directories use mode `0700`, and backup files use `0600`, where supported by the operating system. The extension sends requests directly to your cPanel server, validates HTTPS certificates, and does not follow redirects. Other installed extensions may see open text documents, just as they can with local files. The extension runs locally even when VS Code is connected to a remote workspace.
@@ -55,7 +59,7 @@ The token is stored using VS Code SecretStorage. The extension also stores conne
 
 Open this source folder in VS Code and press **F5** to launch an Extension Development Host. No build or runtime dependencies are needed.
 
-With Node.js 20+, run the test command once the original `test/` directory is available. The initial source import came from the VSIX, which did not include that directory.
+With Node.js 20+, run the tests with:
 
 ```sh
 node --test test/*.test.js
@@ -67,7 +71,7 @@ To package with pnpm:
 pnpm dlx @vscode/vsce package --no-dependencies
 ```
 
-Publisher: **RockYou**. Source version: **0.3.2**.
+Publisher: **RockYou**. Source version: **0.4.0**.
 
 **Migrating from development packages:** The Marketplace publisher ID is `rockyou` rather than the development ID `cpanel-open-dev`. VS Code treats these as separate extensions, so configure your connection again after installing the Marketplace edition.
 

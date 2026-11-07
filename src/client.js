@@ -64,7 +64,7 @@ class CpanelClient {
     return this.send(url, { method: 'GET' });
   }
 
-  async uploadFile(filename, content) {
+  async uploadFile(filename, content, { overwrite = true } = {}) {
     const fullpath = validateFilePath(filename);
     const bytes = Buffer.from(content);
     if (bytes.length > MAX_FILE_BYTES) throw new Error('Choose a text file smaller than 2 MB.');
@@ -72,7 +72,7 @@ class CpanelClient {
     const basename = path.basename(fullpath).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
     const body = Buffer.concat([
       Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="dir"\r\n\r\n${path.dirname(fullpath)}\r\n`),
-      Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="overwrite"\r\n\r\n1\r\n`),
+      Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="overwrite"\r\n\r\n${overwrite ? 1 : 0}\r\n`),
       Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file-1"; filename="${basename}"\r\nContent-Type: application/octet-stream\r\n\r\n`),
       bytes,
       Buffer.from(`\r\n--${boundary}--\r\n`)
@@ -175,7 +175,7 @@ class CpanelClient {
     if (!data || typeof data.content !== 'string') throw new Error('cPanel did not return text content for this file.');
     if (Buffer.byteLength(data.content, 'utf8') > MAX_FILE_BYTES) throw new Error('Choose a text file smaller than 2 MB.');
     if (data.content.includes('\0')) throw new Error('This prototype opens text files only. Choose a code or text file.');
-    if (forEditing && !['utf-8', 'utf8', 'us-ascii', 'ascii'].includes(String(data.from_charset || '').toLowerCase())) {
+    if (forEditing && data.content.length > 0 && !['utf-8', 'utf8', 'us-ascii', 'ascii'].includes(String(data.from_charset || '').toLowerCase())) {
       throw new Error('Editing currently supports UTF-8 and ASCII files only. This file’s original encoding could not be safely preserved.');
     }
     return data.content;
