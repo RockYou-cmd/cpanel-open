@@ -1,5 +1,8 @@
 # cPanel Open
 
+[![VS Code Marketplace installs](https://vsmarketplacebadges.dev/installs/RockYou.cpanel-open.svg?style=for-the-badge&subject=VS%20Code%20Marketplace%20installs&labelColor=163652&color=0069B3)](https://marketplace.visualstudio.com/items?itemName=RockYou.cpanel-open)
+[![Open VSX downloads](https://img.shields.io/open-vsx/dt/rockyou/cpanel-open?style=for-the-badge&label=Open%20VSX%20downloads&labelColor=33204F&color=6D28D9)](https://open-vsx.org/extension/rockyou/cpanel-open)
+
 A small VS Code extension for browsing remote folders and creating and editing text files through the cPanel HTTPS API.
 
 ## Install and use
